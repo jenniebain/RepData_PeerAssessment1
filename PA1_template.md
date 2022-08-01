@@ -5,15 +5,14 @@ output:
     keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, warning=FALSE)
-```
+
 
 ## Loading and preprocessing the data
 
 Load the necessary libraries for this analysis.
 
-```{r message=FALSE}
+
+```r
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -21,7 +20,8 @@ library(ggplot2)
 
 The data is provided in the repository that was forked. Unzip the data if it has not already been unzipped, then read it into a dataframe.
 
-```{r readdata}
+
+```r
 if(!file.exists("activity.csv")){unzip("./activity.zip")}
 
 activities <- read.csv("activity.csv")
@@ -29,7 +29,8 @@ activities <- read.csv("activity.csv")
 
 Preprocess the data by making a time field with interval converted to a time and a datetime field with the date and time.
 
-```{r datetime}
+
+```r
 activities$time <- sprintf("%d:%02d",activities$interval %/% 100, activities$interval %% 100)
 activities$datetime <- as.POSIXct(paste(activities$date,activities$time,sep=" "), "%Y-%m-%d %H:%M")
 ```
@@ -42,24 +43,45 @@ For this part of the analysis, missing values will be ignored.
 
 1. Calculate the total number of steps taken per day.
 
-```{r stepsperday}
+
+```r
 steps_day <- tapply(activities$steps,activities$date,sum,na.rm=TRUE)
 head(steps_day)
 ```
 
+```
+## 2012-10-01 2012-10-02 2012-10-03 2012-10-04 2012-10-05 2012-10-06 
+##          0        126      11352      12116      13294      15420
+```
+
 2. Plot the total number of steps per day as a histogram.
 
-```{r stepsperdayplot}
+
+```r
 hist(steps_day,main="Total Steps per Day from 10/1/2012 to 11/30/2012",xlab="Number of Steps per Day",col="light blue")
 ```
+
+![](PA1_template_files/figure-html/stepsperdayplot-1.png)<!-- -->
 
 3. Find the mean and median of the total number of steps taken per day.
 
 The mean number of steps per day is 9354.23, and the median steps per day is 10395.
 
-```{r meanmedianspd}
+
+```r
 mean(steps_day)
+```
+
+```
+## [1] 9354.23
+```
+
+```r
 median(steps_day)
+```
+
+```
+## [1] 10395
 ```
 
 
@@ -69,22 +91,31 @@ median(steps_day)
 
 First, find the mean number of steps per day for each 5-minute interval.
 
-```{r meaninterval}
+
+```r
 steps_int <- aggregate(activities$steps,list(activities$interval),mean,na.rm=TRUE)
 ```
 
 Next, plot the mean number of steps per day for each 5-minute interval.
 
-```{r meanplot}
+
+```r
 plot(steps_int$Group.1,steps_int$x,type="l",xaxp = c(0,2400,24),main="Mean Steps per Day by Interval",xlab="5 Minute Interval",ylab="Mean Steps per Day")
 ```
+
+![](PA1_template_files/figure-html/meanplot-1.png)<!-- -->
 
 2. Which 5 minute interval, on average across all days in the dataset, contains the maximum number of steps?
 
 We find that the interval from 8:35-8:40am on average contains the maximum number of steps.
 
-```{r maxinterval}
+
+```r
 steps_int[which.max(steps_int$x),1]
+```
+
+```
+## [1] 835
 ```
 
 ## Imputing missing values
@@ -93,17 +124,34 @@ steps_int[which.max(steps_int$x),1]
 
 There are 2304 rows with a value of NA for the step count.
 
-```{r nacount}
+
+```r
 nrow(subset(activities,is.na(activities$steps)))
+```
+
+```
+## [1] 2304
 ```
 
 2. Devise a strategy for filling in all the missing values in the dataset.
 
 First, check that the date and interval columns do not contain any NA values.
 
-```{r checkna}
+
+```r
 nrow(subset(activities,is.na(activities$date)))
+```
+
+```
+## [1] 0
+```
+
+```r
 nrow(subset(activities,is.na(activities$interval)))
+```
+
+```
+## [1] 0
 ```
 
 Only the steps column contains NA values. These will be replaced by the average number of steps in that interval over all days (ignoring NA values).
@@ -112,7 +160,8 @@ Only the steps column contains NA values. These will be replaced by the average 
 
 First, create a new dataframe that is a copy of the original to change the values in. Because we will be using mean values, we need to convert the steps column from an integer to a numeric value to handle decimal numbers. Then replace all NA values with the appropriate mean as described above.
 
-```{r replacena}
+
+```r
 act_new <- activities
 
 act_new$steps <- as.numeric(act_new$steps)
@@ -126,21 +175,37 @@ act_new %>%
 
 First, calculate the total number of steps per day of the new dataframe with the NA values replaced.
 
-```{r newstepsperday}
+
+```r
 steps_day_new <- tapply(act_new$steps,act_new$date,sum,na.rm=TRUE)
 ```
 
 Then plot the new data in a histogram.
 
-```{r newplot}
+
+```r
 hist(steps_day_new,main="Total Steps per Day from 10/1/2012 to 11/30/2012\nNAs replaced with mean per interval",xlab="Number of Steps per Day",col="light blue")
 ```
 
+![](PA1_template_files/figure-html/newplot-1.png)<!-- -->
+
 The new mean number of steps per day is 10,766.19, and the median is also 10,766.19. 
 
-```{r newmeanmedian}
+
+```r
 mean(steps_day_new)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(steps_day_new)
+```
+
+```
+## [1] 10766.19
 ```
 
 Do these values differ from the estimates from the first part of the assignment? 
@@ -157,7 +222,8 @@ Imputing the missing data on the estimates of total number of steps has increase
 
 Add a new column called daytype and start by setting that equal to the string value for the day of the week the date falls on. Then replace the values 'Saturday' and 'Sunday' with the value 'Weekend'. Next replace any values that are not already 'Weekend' with 'Weekday'.
 
-```{r dayofweek}
+
+```r
 act_new$daytype <- weekdays(act_new$datetime)
 act_new$daytype <- replace(act_new$daytype,act_new$daytype == 'Sunday' | act_new$daytype == 'Saturday',"Weekend")
 act_new$daytype <- replace(act_new$daytype,act_new$daytype != 'Weekend',"Weekday")
@@ -167,7 +233,8 @@ act_new$daytype <- replace(act_new$daytype,act_new$daytype != 'Weekend',"Weekday
 
 Note that this uses the data where the NA values have been replaced.
 
-```{r, weekdayendplot, message=FALSE}
+
+```r
 act_new %>%
   group_by(interval,daytype) %>%
   summarize(mean=mean(steps)) %>%
@@ -178,3 +245,5 @@ act_new %>%
   xlab("5 Minute Interval") +
   ylab("Mean Steps per Day") 
 ```
+
+![](PA1_template_files/figure-html/weekdayendplot-1.png)<!-- -->
